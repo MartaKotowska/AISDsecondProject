@@ -68,57 +68,75 @@ void assignNewDistances(int **map, Field***fields, Field* startingPoint, int ROW
 //
 Field* returnShortestWayFromStarting(int **map, Field***fields,Field* shortest, Field* current, int length, int ROWS, int COLUMNS) {
     int minutes1 = UNKNOWN;
-    if (current->defined) {
-        //DOWN
-        if (current->DOWN != EDGE) {
-            if (!fields[current->getRow()+1][current->getCol()]->defined) {
-                if (fields[current->getRow()+1][current->getCol()]->minutes < length) {
-                    length = fields[current->getRow()+1][current->getCol()]->minutes;
-                    shortest =fields[current->getRow()+1][current->getCol()];
+    bool finished = false;
+    bool first = true;
+    while (!finished) {
+        if (!current->defined) {
+            if (current->minutes!=UNKNOWN) {
+                if (first) {
+                    shortest = current;
+                    first = false;
+                } else {
+                    if (current->minutes<shortest->minutes) {
+                        shortest = current;
+                    }
                 }
             }
-        }// UP
-        if (current->UP != EDGE) {
-            if (!fields[current->getRow() - 1][current->getCol()]->defined) {
-                if (fields[current->getRow() - 1][current->getCol()]->minutes < length) {
-                    length = fields[current->getRow() - 1][current->getCol()]->minutes;
-                    shortest = fields[current->getRow() - 1][current->getCol()];
-                }
-            }
+
+            // //DOWN
+            // if (current->DOWN != EDGE) {
+            //     if (!fields[current->getRow()+1][current->getCol()]->defined) {
+            //         if (fields[current->getRow()+1][current->getCol()]->minutes < length) {
+            //             length = fields[current->getRow()+1][current->getCol()]->minutes;
+            //             shortest =fields[current->getRow()+1][current->getCol()];
+            //         }
+            //     }
+            // }// UP
+            // if (current->UP != EDGE) {
+            //     if (!fields[current->getRow() - 1][current->getCol()]->defined) {
+            //         if (fields[current->getRow() - 1][current->getCol()]->minutes < length) {
+            //             length = fields[current->getRow() - 1][current->getCol()]->minutes;
+            //             shortest = fields[current->getRow() - 1][current->getCol()];
+            //         }
+            //     }
+            // }
+            //
+            // // LEFT
+            // if (current->LEFT != EDGE) {
+            //     if (!fields[current->getRow()][current->getCol() - 1]->defined) {
+            //         if (fields[current->getRow()][current->getCol() - 1]->minutes < length) {
+            //             length = fields[current->getRow()][current->getCol() - 1]->minutes;
+            //             shortest = fields[current->getRow()][current->getCol() - 1];
+            //         }
+            //     }
+            // }
+            //
+            // // RIGHT
+            // if (current->RIGHT != EDGE) {
+            //     if (!fields[current->getRow()][current->getCol() + 1]->defined) {
+            //         if (fields[current->getRow()][current->getCol() + 1]->minutes < length) {
+            //             length = fields[current->getRow()][current->getCol() + 1]->minutes;
+            //             shortest = fields[current->getRow()][current->getCol() + 1];
+            //         }
+            //     }
+            // }
+
+
         }
 
-        // LEFT
-        if (current->LEFT != EDGE) {
-            if (!fields[current->getRow()][current->getCol() - 1]->defined) {
-                if (fields[current->getRow()][current->getCol() - 1]->minutes < length) {
-                    length = fields[current->getRow()][current->getCol() - 1]->minutes;
-                    shortest = fields[current->getRow()][current->getCol() - 1];
-                }
-            }
-        }
 
-        // RIGHT
-        if (current->RIGHT != EDGE) {
-            if (!fields[current->getRow()][current->getCol() + 1]->defined) {
-                if (fields[current->getRow()][current->getCol() + 1]->minutes < length) {
-                    length = fields[current->getRow()][current->getCol() + 1]->minutes;
-                    shortest = fields[current->getRow()][current->getCol() + 1];
-                }
-            }
-        }
-
-
-    }
         if (!(current->getRow()==ROWS-1 && current->getCol()==COLUMNS-1)) {
             if (current->getCol()!=COLUMNS-1) {
-               shortest =  returnShortestWayFromStarting(map, fields, shortest,fields[current->getRow()][current->getCol()+1], length, ROWS, COLUMNS);
+                current = fields[current->getRow()][current->getCol()+1];
             } else {
                 if (current->getRow()!=ROWS-1) {
-                    shortest = returnShortestWayFromStarting(map, fields, shortest,fields[current->getRow()+1][0], length, ROWS, COLUMNS);
+                    current = fields[current->getRow()+1][0];
                 }
             }
+        }else {
+            finished = true;
         }
-
+    }
     return shortest;
 }
 void calculateLeft( int** map, Field***fields, int ROWS, int COLUMNS) {
@@ -277,7 +295,9 @@ int main() {
     }
     fields[startingPosX][startingPosY]->defined = true;
     fields[startingPosX][startingPosY]->minutes = 0;
+
     calculateLeft(map, fields, ROWS, COLUMNS);
+
     Field* f;
     while (!checkIfAllDefined(fields, ROWS, COLUMNS)) {
         // assignNewDistances(map, fields, fields[0][0]);
@@ -293,15 +313,15 @@ int main() {
         // }
     } cout<<fields[destinationPosX][destinationPosY]->minutes;
 
-    for (int i = 0; i < ROWS; i++)
-        free(map[i]);
 
     for (int i = 0; i <ROWS; i++) {
+        free(map[i]);
         for (int j = 0; j < COLUMNS; j++) {
             free(fields[i][j]);
         }
         free(fields[i]);
     }
     free(fields);
+    free(map);
     return 0;
 }
