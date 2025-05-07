@@ -1,7 +1,7 @@
 #include <iostream>
 using namespace std;
-#define MAX_ROWS 80
-#define  MAX_COLUMNS 90
+#define MAX_ROWS 10000
+#define  MAX_COLUMNS 10000
 #define EDGE (-1)
 #define UNKNOWN (-1)
 class Field {
@@ -30,7 +30,7 @@ int calculateMinutes(int A, int B) {
         return 1;
     }
 }
-void assignNewDistances(int **map, Field***fields, Field* startingPoint) {
+void assignNewDistances(int **map, Field***fields, Field* startingPoint, int ROWS, int COLUMNS) {
     //DOWN
     int currentMinutes, newMinutes;
     if (startingPoint->getRow()!=ROWS-1) {
@@ -66,7 +66,7 @@ void assignNewDistances(int **map, Field***fields, Field* startingPoint) {
     }
 }
 //
-Field* returnShortestWayFromStarting(int **map, Field***fields,Field* shortest, Field* current, int length) {
+Field* returnShortestWayFromStarting(int **map, Field***fields,Field* shortest, Field* current, int length, int ROWS, int COLUMNS) {
     int minutes1 = UNKNOWN;
     if (current->defined) {
         //DOWN
@@ -111,17 +111,17 @@ Field* returnShortestWayFromStarting(int **map, Field***fields,Field* shortest, 
     }
         if (!(current->getRow()==ROWS-1 && current->getCol()==COLUMNS-1)) {
             if (current->getCol()!=COLUMNS-1) {
-               shortest =  returnShortestWayFromStarting(map, fields, shortest,fields[current->getRow()][current->getCol()+1], length);
+               shortest =  returnShortestWayFromStarting(map, fields, shortest,fields[current->getRow()][current->getCol()+1], length, ROWS, COLUMNS);
             } else {
                 if (current->getRow()!=ROWS-1) {
-                    shortest = returnShortestWayFromStarting(map, fields, shortest,fields[current->getRow()+1][0], length);
+                    shortest = returnShortestWayFromStarting(map, fields, shortest,fields[current->getRow()+1][0], length, ROWS, COLUMNS);
                 }
             }
         }
 
     return shortest;
 }
-void calculateLeft( int** map, Field***fields) {
+void calculateLeft( int** map, Field***fields, int ROWS, int COLUMNS) {
     for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j < COLUMNS; j++) {
             if (i!=0) {
@@ -183,7 +183,7 @@ void assignNewDefined(int **map, Field***fields, Field* newDefined) {
     newDefined->defined = true;
 
 }
-bool checkIfAllDefined(Field***fields) {
+bool checkIfAllDefined(Field***fields, int ROWS, int COLUMNS) {
     for (int i=0; i<ROWS;i++) {
         for (int j=0; j<COLUMNS; j++) {
             if (!fields[i][j]->defined) {
@@ -252,18 +252,13 @@ void updateDistances(int **map, Field***fields, Field* newDefined) {
 
 
 int main() {
-    int ROWS =9, COLUMNS=8, i, j;
+    int ROWS, COLUMNS, startingPosX,startingPosY, destinationPosX,destinationPosY, numberOfLifts;
+    cin>>COLUMNS>>ROWS>>startingPosY>>startingPosX>>destinationPosY>>destinationPosX>>numberOfLifts;
 
     int** map = (int**)malloc(ROWS * sizeof(int*));
     for (int i = 0; i < ROWS; i++) {
         map[i] = (int*)malloc(COLUMNS * sizeof(int));
     }
-
-    int count = 0;
-
-
-
-
 
     for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j < COLUMNS; j++) {
@@ -280,13 +275,13 @@ int main() {
         }
 
     }
-    fields[0][0]->defined = true;
-    fields[0][0]->minutes = 0;
-    calculateLeft(map, fields);
-    Field* f = new Field(ROWS, COLUMNS);
-    while (!checkIfAllDefined(fields)) {
+    fields[startingPosX][startingPosY]->defined = true;
+    fields[startingPosX][startingPosY]->minutes = 0;
+    calculateLeft(map, fields, ROWS, COLUMNS);
+    Field* f;
+    while (!checkIfAllDefined(fields, ROWS, COLUMNS)) {
         // assignNewDistances(map, fields, fields[0][0]);
-        f = returnShortestWayFromStarting(map,fields,fields[0][0],fields[0][0],10000);
+        f = returnShortestWayFromStarting(map,fields,fields[0][0],fields[0][0],10000, ROWS, COLUMNS);
         assignNewDefined(map, fields, f);
         updateDistances(map, fields, f);
 
@@ -296,8 +291,17 @@ int main() {
         //     }
         //     cout<<endl;
         // }
-    } cout<<fields[7][8]->minutes;
+    } cout<<fields[destinationPosX][destinationPosY]->minutes;
+
     for (int i = 0; i < ROWS; i++)
         free(map[i]);
+
+    for (int i = 0; i <ROWS; i++) {
+        for (int j = 0; j < COLUMNS; j++) {
+            free(fields[i][j]);
+        }
+        free(fields[i]);
+    }
+    free(fields);
     return 0;
 }
