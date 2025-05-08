@@ -4,25 +4,52 @@ using namespace std;
 #define  MAX_COLUMNS 10000
 #define EDGE (-1)
 #define UNKNOWN (-1)
+
 class Field {
-        int row, col;
-    public:
+    int row, col;
+public:
     bool defined;
+    //defined distance
+    int distance;
+    //read from input
     int minutes;
-    int UP, DOWN,LEFT, RIGHT;
-        int getRow() {
-            return row;
-        }
-        int getCol() {
-            return col;
-        }
-        Field(int row, int col) {
-            this->row = row;
-            this->col = col;
-            defined = false;
-            minutes = UNKNOWN;
-        }
+    Field() {
+        this->row = 0;
+        this->col = 0;
+        defined = false;
+        distance = UNKNOWN;
+    }
+    Field(int row, int col) {
+        this->row = row;
+        this->col = col;
+        defined = false;
+        distance = UNKNOWN;
+    }
+    int getRow() const {
+        return row;
+    }
+    int getCol() const {
+        return col;
+    }
+
 };
+class PriorityQueue {
+    public:
+    int distance;
+    int row, col;
+    int numberOfVertices;
+    PriorityQueue() {
+        distance = UNKNOWN;
+        row = 0;
+        col = 0;
+    }
+    PriorityQueue(int row, int col, int distance) {
+        this->row = row;
+        this->col = col;
+        this->distance = distance;
+    }
+};
+
 int calculateMinutes(int A, int B) {
     if (A>B) {
         return A-B+1;
@@ -30,256 +57,138 @@ int calculateMinutes(int A, int B) {
         return 1;
     }
 }
-void assignNewDistances(int **map, Field***fields, Field* startingPoint, int ROWS, int COLUMNS) {
-    //DOWN
-    int currentMinutes, newMinutes;
-    if (startingPoint->getRow()!=ROWS-1) {
-        currentMinutes = fields[startingPoint->getRow()+1][startingPoint->getCol()]->minutes;
-        newMinutes = calculateMinutes(map[startingPoint->getRow()+1][startingPoint->getCol()],startingPoint->minutes);
-        if (currentMinutes==UNKNOWN||(currentMinutes > newMinutes)) {
-            fields[startingPoint->getRow()+1][startingPoint->getCol()]->minutes = newMinutes;
+int returnPos(int row, int col, int COLUMNS) {
+    return row*COLUMNS+col;
+}
+
+void calculatingDist(Field * fields, Field*B, Field*A, PriorityQueue* pQueue, int COLUMNS) {
+    bool found = false;
+    int posInArray =0;
+    int distance = 0;
+    if (!A->defined) {
+        while (!found) {
+            if (pQueue[posInArray].distance == UNKNOWN) {
+                pQueue[posInArray].row=A->getRow();
+                pQueue[posInArray].col=A->getCol();
+                pQueue[posInArray].distance = calculateMinutes(A->minutes, B->minutes)+B->distance;
+                found = true;
+            }
+            posInArray++;
+
         }
+
     }
+}
+void calculateNeighbours(Field * fields, Field* starting, PriorityQueue* pQueue, int ROWS, int COLUMNS) {
     //UP
-    if (startingPoint->getRow()!=0) {
-        currentMinutes = fields[startingPoint->getRow()-1][startingPoint->getCol()]->minutes;
-        newMinutes = calculateMinutes(map[startingPoint->getRow()-1][startingPoint->getCol()],startingPoint->minutes);
-        if (currentMinutes==UNKNOWN||(currentMinutes > newMinutes)) {
-            fields[startingPoint->getRow()-1][startingPoint->getCol()]->minutes = newMinutes;
-        }
+    if (starting->getRow()!=0) {
+        calculatingDist(fields, starting, &fields[returnPos(starting->getRow()-1, starting->getCol(), COLUMNS)],pQueue, COLUMNS);
+    }
+    //DOWN
+    if (starting->getRow()!=ROWS-1) {
+        calculatingDist(fields, starting, &fields[returnPos(starting->getRow()+1, starting->getCol(), COLUMNS)],pQueue,COLUMNS);
     }
     //LEFT
-    if (startingPoint->getCol()!=0) {
-        currentMinutes = fields[startingPoint->getRow()][startingPoint->getCol()-1]->minutes;
-        newMinutes = calculateMinutes(map[startingPoint->getRow()][startingPoint->getCol()-1],startingPoint->minutes);
-        if (currentMinutes==UNKNOWN||(currentMinutes > newMinutes)) {
-            fields[startingPoint->getRow()][startingPoint->getCol()-1]->minutes = newMinutes;
-        }
+    if (starting->getCol()!=0) {
+        calculatingDist(fields, starting, &fields[returnPos(starting->getRow(), starting->getCol()-1, COLUMNS)],pQueue, COLUMNS);
     }
     //RIGHT
-    if (startingPoint->getCol()!=COLUMNS-1) {
-        currentMinutes = fields[startingPoint->getRow()][startingPoint->getCol()+1]->minutes;
-        newMinutes = calculateMinutes(map[startingPoint->getRow()][startingPoint->getCol()+1],startingPoint->minutes);
-        if (currentMinutes==UNKNOWN||(currentMinutes > newMinutes)) {
-            fields[startingPoint->getRow()][startingPoint->getCol()+1]->minutes = newMinutes;
-        }
+    if (starting->getCol()!=COLUMNS-1) {
+        calculatingDist(fields, starting, &fields[returnPos(starting->getRow(), starting->getCol()+1, COLUMNS)],pQueue, COLUMNS);
     }
 }
-//
-Field* returnShortestWayFromStarting(int **map, Field***fields,Field* shortest, Field* current, int length, int ROWS, int COLUMNS) {
-    int minutes1 = UNKNOWN;
-    bool finished = false;
-    bool first = true;
-    while (!finished) {
-        if (!current->defined) {
-            if (current->minutes!=UNKNOWN) {
-                if (first) {
-                    shortest = current;
-                    first = false;
-                } else {
-                    if (current->minutes<shortest->minutes) {
-                        shortest = current;
-                    }
-                }
-            }
+void deleteShortestFromQueue(PriorityQueue* shortest, PriorityQueue* pQueue, int COLUMNS, int current) {
+    int next=current+1;
+    int row = pQueue[current].row;
+    int col = pQueue[current].col;
+    while (pQueue[next-1].distance!=UNKNOWN) {
+        if ( pQueue[next].row == row && pQueue[next].col == col) {
+            next++;
         }
-        if (!(current->getRow()==ROWS-1 && current->getCol()==COLUMNS-1)) {
-            if (current->getCol()!=COLUMNS-1) {
-                current = fields[current->getRow()][current->getCol()+1];
-            } else {
-                if (current->getRow()!=ROWS-1) {
-                    current = fields[current->getRow()+1][0];
-                }
-            }
-        }else {
-            finished = true;
-        }
+        pQueue[current].row =  pQueue[next].row;
+        pQueue[current].col =  pQueue[next].col;
+        pQueue[current].distance = pQueue[next].distance;
+
+        current++;
+        next++;
     }
-    return shortest;
-}
-void calculateLeft( int** map, Field***fields, int ROWS, int COLUMNS) {
-    for (int i = 0; i < ROWS; i++) {
-        for (int j = 0; j < COLUMNS; j++) {
-            if (i!=0) {
-                fields[i][j]->UP = calculateMinutes(map[i-1][j],map[i][j]);
-            }else {
-                fields[i][j]->UP = EDGE;
-            }
 
-            if (i!=ROWS-1) {
-                fields[i][j]->DOWN = calculateMinutes(map[i+1][j],map[i][j]);
-            }else {
-                fields[i][j]->DOWN = EDGE;
-            }
-
-            if (j!=0) {
-                fields[i][j]->LEFT = calculateMinutes(map[i][j-1],map[i][j]);
-            }else {
-                fields[i][j]->LEFT = EDGE;
-            }
-
-            if (j!=COLUMNS-1) {
-                fields[i][j]->RIGHT = calculateMinutes(map[i][j+1],map[i][j]);
-            }else {
-                fields[i][j]->RIGHT = EDGE;
-            }
-
-        }
-    }
-}
-void assignNewDefined(int **map, Field***fields, Field* newDefined) {
- int newMinutes=0;
-        if (newDefined->DOWN != EDGE) {
-            if (fields[newDefined->getRow()+1][newDefined->getCol()]->defined) {
-                newMinutes = fields[newDefined->getRow()+1][newDefined->getCol()]->UP + fields[newDefined->getRow()+1][newDefined->getCol()]->minutes;
-            }
-        }
-        if (newDefined->UP != EDGE) {
-            if (fields[newDefined->getRow()-1][newDefined->getCol()]->defined) {
-                newMinutes = fields[newDefined->getRow()-1][newDefined->getCol()]->DOWN + fields[newDefined->getRow()-1][newDefined->getCol()]->minutes;
-            }
-        }
-        if (newDefined->LEFT != EDGE) {
-            if (fields[newDefined->getRow()][newDefined->getCol()-1]->defined) {
-                newMinutes = fields[newDefined->getRow()][newDefined->getCol()-1]->RIGHT + fields[newDefined->getRow()][newDefined->getCol()-1]->minutes;
-            }
-        }
-        if (newDefined->RIGHT != EDGE) {
-            if (fields[newDefined->getRow()][newDefined->getCol()+1]->defined) {
-                newMinutes = fields[newDefined->getRow()][newDefined->getCol()+1]->LEFT + fields[newDefined->getRow()][newDefined->getCol()+1]->minutes;
-            }
-        }
-    if (newDefined->minutes!=UNKNOWN) {
-        if (newDefined->minutes > newMinutes) {
-            newDefined->minutes = newMinutes;
-        }
-    }else {
-        newDefined->minutes = newMinutes;
-    }
-    newDefined->defined = true;
 
 }
-bool checkIfAllDefined(Field***fields, int ROWS, int COLUMNS) {
-    for (int i=0; i<ROWS;i++) {
+Field* findShortest(Field * fields, PriorityQueue* pQueue, int COLUMNS) {
+    bool found = false;
+    int row=pQueue[0].row, col=pQueue[0].col;
+    int posInQueue =0;
+    int valueOfShortest=pQueue[0].distance;
+    int posInArray =0;
+
+    while (!found) {
+        // cout<<"dist: "<<pQueue[posInArray].distance<<"row: "<<pQueue[posInArray].row<<" col: "<<pQueue[posInArray].col<<endl;
+        posInArray++;
+
+        if (pQueue[posInArray].distance == UNKNOWN) {
+
+            found = true;
+            break;
+        }
+        if (pQueue[posInArray].distance < valueOfShortest) {
+            // cout<<"dist: "<<pQueue[posInArray].distance<<"row: "<<pQueue[posInArray].row<<" col: "<<pQueue[posInArray].col<<endl;
+            col = pQueue[posInArray].col;
+            row = pQueue[posInArray].row;
+            posInQueue = posInArray;
+            valueOfShortest = pQueue[posInArray].distance;
+        }
+    }
+
+        fields[row*COLUMNS+col].distance = valueOfShortest;
+        fields[row*COLUMNS+col].defined=true;
+
+        deleteShortestFromQueue(&pQueue[posInQueue],pQueue,COLUMNS, posInQueue);
+
+        return & fields[row*COLUMNS+col];
+
+}
+bool checkIfAllDefined(Field* fields, int ROWS, int COLUMNS) {
+    for (int i=0; i<ROWS; i++) {
         for (int j=0; j<COLUMNS; j++) {
-            if (!fields[i][j]->defined) {
-                return false;
-            }
+            if (!fields[i * COLUMNS + j].defined) return false;
         }
     }
     return true;
 }
-void updateDistances(int **map, Field***fields, Field* newDefined) {
-    int newMinutes=0;
-    if (newDefined->DOWN != EDGE) {
-        if (!fields[newDefined->getRow()+1][newDefined->getCol()]->defined) {
-            newMinutes = calculateMinutes(map[newDefined->getRow()+1][newDefined->getCol()], map[newDefined->getRow()][newDefined->getCol()])+newDefined->minutes;
-            if (fields[newDefined->getRow()+1][newDefined->getCol()]->minutes!=UNKNOWN) {
-                if (newMinutes < fields[newDefined->getRow()+1][newDefined->getCol()]->minutes) {
-                    fields[newDefined->getRow()+1][newDefined->getCol()]->minutes = newMinutes;
-                }
-            } else {
-                fields[newDefined->getRow()+1][newDefined->getCol()]->minutes = newMinutes;
-            }
+    int main() {
+        int ROWS, COLUMNS, startingRow,startingCol, destinationCol,destinationRow, numberOfLifts;
+        cin>>COLUMNS>>ROWS>>startingCol>>startingRow>>destinationCol>>destinationRow>>numberOfLifts;
 
-        }
-    }
-    // UP
-    if (newDefined->UP != EDGE) {
-        if (!fields[newDefined->getRow()-1][newDefined->getCol()]->defined) {
-            newMinutes = calculateMinutes(map[newDefined->getRow()-1][newDefined->getCol()], map[newDefined->getRow()][newDefined->getCol()]) + newDefined->minutes;
-            if (fields[newDefined->getRow()-1][newDefined->getCol()]->minutes != UNKNOWN) {
-                if (newMinutes < fields[newDefined->getRow()-1][newDefined->getCol()]->minutes) {
-                    fields[newDefined->getRow()-1][newDefined->getCol()]->minutes = newMinutes;
-                }
-            } else {
-                fields[newDefined->getRow()-1][newDefined->getCol()]->minutes = newMinutes;
+        Field* fields = new Field[ROWS*COLUMNS];
+        PriorityQueue* pQueue = new PriorityQueue[ROWS*COLUMNS*4];
+        for (int i=0; i<ROWS; i++) {
+            for (int j=0; j<COLUMNS; j++) {
+                new (&fields[i * COLUMNS + j]) Field(i, j);
             }
         }
-    }
-    // LEFT
-    if (newDefined->LEFT != EDGE) {
-        if (!fields[newDefined->getRow()][newDefined->getCol()-1]->defined) {
-            newMinutes = calculateMinutes(map[newDefined->getRow()][newDefined->getCol()-1], map[newDefined->getRow()][newDefined->getCol()]) + newDefined->minutes;
-            if (fields[newDefined->getRow()][newDefined->getCol()-1]->minutes != UNKNOWN) {
-                if (newMinutes < fields[newDefined->getRow()][newDefined->getCol()-1]->minutes) {
-                    fields[newDefined->getRow()][newDefined->getCol()-1]->minutes = newMinutes;
-                }
-            } else {
-                fields[newDefined->getRow()][newDefined->getCol()-1]->minutes = newMinutes;
+        for (int i=0; i<ROWS; i++) {
+            for (int j=0; j<COLUMNS; j++) {
+               cin>>fields[i * COLUMNS + j].minutes;
             }
         }
-    }
-    // RIGHT
-    if (newDefined->RIGHT != EDGE) {
-        if (!fields[newDefined->getRow()][newDefined->getCol()+1]->defined) {
-            newMinutes = calculateMinutes(map[newDefined->getRow()][newDefined->getCol()+1], map[newDefined->getRow()][newDefined->getCol()]) + newDefined->minutes;
-            if (fields[newDefined->getRow()][newDefined->getCol()+1]->minutes != UNKNOWN) {
-                if (newMinutes < fields[newDefined->getRow()][newDefined->getCol()+1]->minutes) {
-                    fields[newDefined->getRow()][newDefined->getCol()+1]->minutes = newMinutes;
-                }
-            } else {
-                fields[newDefined->getRow()][newDefined->getCol()+1]->minutes = newMinutes;
-            }
-        }
-    }
-
-}
-
-
-int main() {
-    int ROWS, COLUMNS, startingPosX,startingPosY, destinationPosX,destinationPosY, numberOfLifts;
-    cin>>COLUMNS>>ROWS>>startingPosY>>startingPosX>>destinationPosY>>destinationPosX>>numberOfLifts;
-
-    int** map = (int**)malloc(ROWS * sizeof(int*));
-    for (int i = 0; i < ROWS; i++) {
-        map[i] = (int*)malloc(COLUMNS * sizeof(int));
-    }
-
-    for (int i = 0; i < ROWS; i++) {
-        for (int j = 0; j < COLUMNS; j++) {
-            cin >> map[i][j];
-        }
-    }
-    Field *** fields = (Field***)malloc(ROWS * sizeof(Field**));
-    for (int i = 0; i < ROWS; i++) {
-        fields[i] = (Field**)malloc(COLUMNS * sizeof(Field*));
-        for (int j = 0; j < COLUMNS; j++) {
-            fields[i][j] = (Field*)malloc(sizeof(Field));
-            fields[i][j] = new Field(i, j);
-
-        }
-
-    }
-    fields[startingPosX][startingPosY]->defined = true;
-    fields[startingPosX][startingPosY]->minutes = 0;
-
-    calculateLeft(map, fields, ROWS, COLUMNS);
-
-    Field* f;
+        fields[startingRow*COLUMNS +startingCol].defined = true;
+        fields[startingRow*COLUMNS +startingCol].distance = 0;
+        calculateNeighbours(fields,&fields[startingRow*COLUMNS +startingCol],pQueue,ROWS, COLUMNS);
     while (!checkIfAllDefined(fields, ROWS, COLUMNS)) {
-        // assignNewDistances(map, fields, fields[0][0]);
-        f = returnShortestWayFromStarting(map,fields,fields[0][0],fields[0][0],10000, ROWS, COLUMNS);
-        assignNewDefined(map, fields, f);
-        updateDistances(map, fields, f);
-
-        // for (int i = 0; i < ROWS; i++) {
-        //     for (int j = 0; j < COLUMNS; j++) {
-        //         cout<<fields[i][j]->minutes<<" ";
+        // for (int i=0; i<ROWS; i++) {
+        //     for (int j=0; j<COLUMNS; j++) {
+        //         cout<<fields[i * COLUMNS + j].distance<<" ";
         //     }
         //     cout<<endl;
-        // }
-    } cout<<fields[destinationPosX][destinationPosY]->minutes;
+        // }cout<<endl;
+        Field* shortest =findShortest(fields,pQueue,COLUMNS);
 
+        calculateNeighbours(fields,shortest,pQueue,ROWS, COLUMNS);
 
-    for (int i = 0; i <ROWS; i++) {
-        free(map[i]);
-        for (int j = 0; j < COLUMNS; j++) {
-            free(fields[i][j]);
-        }
-        free(fields[i]);
     }
-    free(fields);
-    free(map);
-    return 0;
-}
+    cout<<fields[destinationRow*COLUMNS + destinationCol].distance<<endl;
+
+       delete[] fields;
+        return 0;
+    }
