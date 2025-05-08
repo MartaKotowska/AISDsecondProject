@@ -82,49 +82,7 @@ Field* returnShortestWayFromStarting(int **map, Field***fields,Field* shortest, 
                     }
                 }
             }
-
-            // //DOWN
-            // if (current->DOWN != EDGE) {
-            //     if (!fields[current->getRow()+1][current->getCol()]->defined) {
-            //         if (fields[current->getRow()+1][current->getCol()]->minutes < length) {
-            //             length = fields[current->getRow()+1][current->getCol()]->minutes;
-            //             shortest =fields[current->getRow()+1][current->getCol()];
-            //         }
-            //     }
-            // }// UP
-            // if (current->UP != EDGE) {
-            //     if (!fields[current->getRow() - 1][current->getCol()]->defined) {
-            //         if (fields[current->getRow() - 1][current->getCol()]->minutes < length) {
-            //             length = fields[current->getRow() - 1][current->getCol()]->minutes;
-            //             shortest = fields[current->getRow() - 1][current->getCol()];
-            //         }
-            //     }
-            // }
-            //
-            // // LEFT
-            // if (current->LEFT != EDGE) {
-            //     if (!fields[current->getRow()][current->getCol() - 1]->defined) {
-            //         if (fields[current->getRow()][current->getCol() - 1]->minutes < length) {
-            //             length = fields[current->getRow()][current->getCol() - 1]->minutes;
-            //             shortest = fields[current->getRow()][current->getCol() - 1];
-            //         }
-            //     }
-            // }
-            //
-            // // RIGHT
-            // if (current->RIGHT != EDGE) {
-            //     if (!fields[current->getRow()][current->getCol() + 1]->defined) {
-            //         if (fields[current->getRow()][current->getCol() + 1]->minutes < length) {
-            //             length = fields[current->getRow()][current->getCol() + 1]->minutes;
-            //             shortest = fields[current->getRow()][current->getCol() + 1];
-            //         }
-            //     }
-            // }
-
-
         }
-
-
         if (!(current->getRow()==ROWS-1 && current->getCol()==COLUMNS-1)) {
             if (current->getCol()!=COLUMNS-1) {
                 current = fields[current->getRow()][current->getCol()+1];
