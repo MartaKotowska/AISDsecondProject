@@ -65,7 +65,7 @@ class MinHeap {
     void heapifyUp(Node* current, int pos) {
         if (pos!=0) {
             while (pos!=0 && getParent(pos)->distance > current->distance) {
-                cout<<getParent(pos)->distance<<endl;
+                // cout<<getParent(pos)->distance<<endl;
                     swap(getParentPos(pos),pos);
                     current = getParent(pos);
                     pos = getParentPos(pos);
@@ -89,6 +89,9 @@ class MinHeap {
         int leftChildPos = getLeftChildPos(parentPos);
         int rightChildPos = getRightChildPos(parentPos);
         while (heapArray[parentPos].distance>heapArray[leftChildPos].distance || heapArray[parentPos].distance > heapArray[rightChildPos].distance) {
+            if (leftChildPos>heap_size-1 || rightChildPos>heap_size-1) {
+                break;
+            }
             if (heapArray[leftChildPos].distance<heapArray[rightChildPos].distance) {
                 swap(parentPos,leftChildPos);
                 parentPos = leftChildPos;
@@ -98,16 +101,13 @@ class MinHeap {
             }
             leftChildPos = getLeftChildPos(parentPos);
             rightChildPos = getRightChildPos(parentPos);
-            if (leftChildPos>heap_size-1 || rightChildPos>heap_size-1) {
-                break;
-            }
+
         }
     }
     Node getRoot() {
         Node root = heapArray[0];
         heapArray[0] = heapArray[--heap_size];
-        cout<<"new root :"<<heapArray[0].distance<<endl;
-        cout<<"new  :"<<heapArray[heap_size].distance<<endl;
+        // cout<<"new root :"<<heapArray[0].distance<<endl;
         heapArray[heap_size].distance = UNKNOWN;
         heapifyDown(0);
         return root;
@@ -128,64 +128,84 @@ void addNewDefined(int* distance, bool* visited, Node newDefined, int COLUMNS) {
     visited[getPos(newDefined.row,newDefined.col, COLUMNS)] = true;
     distance[getPos(newDefined.row,newDefined.col, COLUMNS)] = newDefined.distance;
 }
-
-void addNeighboursToHeap(bool*defined, int* distance,int * minutes,Node current, int COLUMNS, MinHeap* heap) {
-    int newMinutes;
+void addToHeap(int otherPos,int currentPos, int* minutes,bool* defined, int*distance,int otherRow, int otherCol, MinHeap* heap) {
+    if (!defined[otherPos]) {
+        int newMinutes = calculateMinutes(minutes[otherPos],minutes[currentPos])+distance[currentPos];
+        heap->addField(new Node(otherRow, otherCol,newMinutes));
+    }
+}
+void addNeighboursToHeap(bool*defined, int* distance, int * minutes,Node current, int COLUMNS, int ROWS, MinHeap* heap) {
     int currentPos = getPos(current.row,current.col, COLUMNS);
     int otherPos;
     //UP
     if (current.row!=0) {
         otherPos = getPos(current.row-1,current.col, COLUMNS);
-        if (!defined[otherPos]) {
-            newMinutes = calculateMinutes(minutes[otherPos],minutes[currentPos])+distance[currentPos];
-            heap->addField(new Node(current.row-1, current.col,newMinutes));
-        }
+        addToHeap(otherPos,currentPos,minutes,defined,distance,current.row-1,current.col,heap);
+
+    }
+    //DOWN
+    if (current.row!=ROWS-1) {
+        otherPos = getPos(current.row+1,current.col, COLUMNS);
+        addToHeap(otherPos,currentPos,minutes,defined,distance,current.row+1,current.col,heap);
+
+    }
+    //LEFT
+    if (current.col!=0) {
+        otherPos = getPos(current.row,current.col-1, COLUMNS);
+        addToHeap(otherPos,currentPos,minutes,defined,distance,current.row,current.col-1,heap);
+
+    }
+    //RIGHT
+    if (current.col!=COLUMNS-1) {
+        otherPos = getPos(current.row,current.col+1, COLUMNS);
+        addToHeap(otherPos,currentPos,minutes,defined,distance,current.row,current.col+1,heap);
+
     }
 }
 int main() {
-    int ROWS=5, COLUMNS=5, startingRow=1,startingCol=0, destinationCol=1,destinationRow=1, numberOfLifts;
-    // cin>>COLUMNS>>ROWS>>startingCol>>startingRow>>destinationCol>>destinationRow>>numberOfLifts;
+    int ROWS, COLUMNS, startingRow,startingCol, destinationCol,destinationRow, numberOfLifts;
 
+    cin>>COLUMNS>>ROWS>>startingCol>>startingRow>>destinationCol>>destinationRow>>numberOfLifts;
+
+    MinHeap minHeap(ROWS*COLUMNS);
     int* minutes = new int[ROWS * COLUMNS];
     int* distance = new int[ROWS * COLUMNS];
     bool* visited = new bool[ROWS * COLUMNS];
+    if (numberOfLifts!=0) {
 
+    }
     for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j < COLUMNS; j++) {
-            // cin>>minutes[i * COLUMNS + j];
+            cin>>minutes[i * COLUMNS + j];
             distance[i * COLUMNS + j] = UNKNOWN;
             visited[i * COLUMNS + j] = false;
         }
     }
-    minutes[0]=1;
-    minutes[5]=0;
     distance[getPos(startingRow, startingCol, COLUMNS)] = 0;
-    visited[getPos(startingRow, startingCol, COLUMNS)] = true;
-    MinHeap minHeap(ROWS*COLUMNS);
-    minHeap.addField(new Node(startingRow,startingCol,0));
-    Node shortest = minHeap.getRoot();
-    addNewDefined(distance,visited,shortest,COLUMNS);
-    addNeighboursToHeap(visited,distance,minutes,shortest,COLUMNS,&minHeap);
-    shortest = minHeap.getRoot();
-    addNewDefined(distance,visited,shortest,COLUMNS);
-    cout<<shortest.distance<<endl;
-    for (int i = 0; i < ROWS; i++) {
-        for (int j = 0; j < COLUMNS; j++) {
-            cout<<distance[i * COLUMNS + j]<<" ";
+    // visited[getPos(startingRow, startingCol, COLUMNS)] = true;
+
+
+    minHeap.addField(new Node(startingRow,startingCol,distance[getPos(startingRow, startingCol, COLUMNS)]));
+
+
+    while (!visited[getPos(destinationRow, destinationCol, COLUMNS)]) {
+        Node shortest = minHeap.getRoot();
+        if (!visited[getPos(shortest.row,shortest.col,COLUMNS)]) {
+            addNewDefined(distance,visited,shortest,COLUMNS);
+            addNeighboursToHeap(visited, distance,minutes,shortest,COLUMNS,ROWS,&minHeap);
+            // cout<<"dist\n";
+            // for (int i = 0; i < ROWS; i++) {
+            //     for (int j = 0; j < COLUMNS; j++) {
+            //         cout<<distance[i * COLUMNS + j]<<" ";
+            //     }
+            //     cout<<endl;
+            // }
+            // cout<<"heap:\n";
+            // minHeap.printHeap();
+            // cout<<endl;
         }
-        cout<<endl;
     }
-    for (int i = 0; i < ROWS; i++) {
-        for (int j = 0; j < COLUMNS; j++) {
-            cout<<visited[i * COLUMNS + j]<<" ";
-        }
-        cout<<endl;
-    }
-    // while (!visited[getPos(destinationRow, destinationCol, COLUMNS)]) {
-    //     Node shortest = minHeap.getRoot();
-    //     addNewDefined(distance,visited,shortest,COLUMNS);
-    //
-    // }
+    cout<<distance[getPos(destinationRow, destinationCol, COLUMNS)]<<endl;
     // minHeap.addField(new Node(1,3,5));
     // // minHeap.printHeap();
     // minHeap.addField(new Node(1,3,1));
@@ -195,4 +215,8 @@ int main() {
     // minHeap.printHeap();
     // cout<<"root:\n"<<minHeap.getRoot().distance<<"\n";
     // minHeap.printHeap();
+    delete[] minutes;
+    delete[] distance;
+    delete[] visited;
+    return 0;
 }
